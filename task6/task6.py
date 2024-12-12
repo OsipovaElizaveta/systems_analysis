@@ -1,45 +1,44 @@
-# -*- coding: cp1251 -*-
 import json
 import numpy as np
 
 
 def membership_function(value, points):
-    """Вычисляет степень принадлежности значения функции принадлежности (линейная интерполяция)."""
+    """Р’С‹С‡РёСЃР»СЏРµС‚ СЃС‚РµРїРµРЅСЊ РїСЂРёРЅР°РґР»РµР¶РЅРѕСЃС‚Рё Р·РЅР°С‡РµРЅРёСЏ С„СѓРЅРєС†РёРё РїСЂРёРЅР°РґР»РµР¶РЅРѕСЃС‚Рё (Р»РёРЅРµР№РЅР°СЏ РёРЅС‚РµСЂРїРѕР»СЏС†РёСЏ)."""
     for i in range(len(points) - 1):
         x1, y1 = points[i]
         x2, y2 = points[i + 1]
         if x1 <= value <= x2:
-            # Линейная интерполяция
+            # Р›РёРЅРµР№РЅР°СЏ РёРЅС‚РµСЂРїРѕР»СЏС†РёСЏ
             return y1 + (value - x1) * ((y2 - y1) / (x2 - x1))
     return 0
 
 
 def fuzzy_control(temp_membership_json, heat_membership_json, rules_json, current_temp):
     """
-    Реализует алгоритм нечеткого управления.
+    Р РµР°Р»РёР·СѓРµС‚ Р°Р»РіРѕСЂРёС‚Рј РЅРµС‡РµС‚РєРѕРіРѕ СѓРїСЂР°РІР»РµРЅРёСЏ.
     
     Args:
-        temp_membership_json (str): JSON со значениями функций принадлежности температуры.
-        heat_membership_json (str): JSON со значениями функций принадлежности уровня нагрева.
-        rules_json (str): JSON с правилами нечеткого управления.
-        current_temp (float): Текущее значение температуры.
+        temp_membership_json (str): JSON СЃРѕ Р·РЅР°С‡РµРЅРёСЏРјРё С„СѓРЅРєС†РёР№ РїСЂРёРЅР°РґР»РµР¶РЅРѕСЃС‚Рё С‚РµРјРїРµСЂР°С‚СѓСЂС‹.
+        heat_membership_json (str): JSON СЃРѕ Р·РЅР°С‡РµРЅРёСЏРјРё С„СѓРЅРєС†РёР№ РїСЂРёРЅР°РґР»РµР¶РЅРѕСЃС‚Рё СѓСЂРѕРІРЅСЏ РЅР°РіСЂРµРІР°.
+        rules_json (str): JSON СЃ РїСЂР°РІРёР»Р°РјРё РЅРµС‡РµС‚РєРѕРіРѕ СѓРїСЂР°РІР»РµРЅРёСЏ.
+        current_temp (float): РўРµРєСѓС‰РµРµ Р·РЅР°С‡РµРЅРёРµ С‚РµРјРїРµСЂР°С‚СѓСЂС‹.
 
     Returns:
-        float: Значение уровня нагрева после нечеткого управления.
+        float: Р—РЅР°С‡РµРЅРёРµ СѓСЂРѕРІРЅСЏ РЅР°РіСЂРµРІР° РїРѕСЃР»Рµ РЅРµС‡РµС‚РєРѕРіРѕ СѓРїСЂР°РІР»РµРЅРёСЏ.
     """
-    # Десериализация JSON
+    # Р”РµСЃРµСЂРёР°Р»РёР·Р°С†РёСЏ JSON
     temp_membership = json.loads(temp_membership_json)
     heat_membership = json.loads(heat_membership_json)
     rules = json.loads(rules_json)
 
-    # Нечеткий вывод для текущей температуры
+    # РќРµС‡РµС‚РєРёР№ РІС‹РІРѕРґ РґР»СЏ С‚РµРєСѓС‰РµР№ С‚РµРјРїРµСЂР°С‚СѓСЂС‹
     fuzzy_temp = {}
-    for term in temp_membership["температура"]:
+    for term in temp_membership["С‚РµРјРїРµСЂР°С‚СѓСЂР°"]:
         membership_degree = membership_function(current_temp, term["points"])
         if membership_degree > 0:
             fuzzy_temp[term["id"]] = membership_degree
 
-    # Применение правил управления
+    # РџСЂРёРјРµРЅРµРЅРёРµ РїСЂР°РІРёР» СѓРїСЂР°РІР»РµРЅРёСЏ
     fuzzy_output = {}
     for rule in rules:
         if rule[0] in fuzzy_temp:
@@ -49,11 +48,11 @@ def fuzzy_control(temp_membership_json, heat_membership_json, rules_json, curren
                 fuzzy_output[heat_term] = 0
             fuzzy_output[heat_term] = max(fuzzy_output[heat_term], temp_degree)
 
-    # Дефаззификация (центроидный метод)
+    # Р”РµС„Р°Р·Р·РёС„РёРєР°С†РёСЏ (С†РµРЅС‚СЂРѕРёРґРЅС‹Р№ РјРµС‚РѕРґ)
     numerator = 0
     denominator = 0
 
-    for term in heat_membership["температура"]:
+    for term in heat_membership["С‚РµРјРїРµСЂР°С‚СѓСЂР°"]:
         if term["id"] in fuzzy_output:
             membership_degree = fuzzy_output[term["id"]]
             for point in term["points"]:
@@ -64,34 +63,33 @@ def fuzzy_control(temp_membership_json, heat_membership_json, rules_json, curren
     return numerator / denominator if denominator != 0 else 0
 
 
-# Пример использования
+# РџСЂРёРјРµСЂ РёСЃРїРѕР»СЊР·РѕРІР°РЅРёСЏ
 temp_membership_json = '''
 {
-    "температура": [
-        {"id": "холодно", "points": [[0,1],[18,1],[22,0],[50,0]]},
-        {"id": "комфортно", "points": [[18,0],[22,1],[24,1],[26,0]]},
-        {"id": "жарко", "points": [[0,0],[24,0],[26,1],[50,1]]}
+    "С‚РµРјРїРµСЂР°С‚СѓСЂР°": [
+        {"id": "С…РѕР»РѕРґРЅРѕ", "points": [[0,1],[18,1],[22,0],[50,0]]},
+        {"id": "РєРѕРјС„РѕСЂС‚РЅРѕ", "points": [[18,0],[22,1],[24,1],[26,0]]},
+        {"id": "Р¶Р°СЂРєРѕ", "points": [[0,0],[24,0],[26,1],[50,1]]}
     ]
 }
 '''
 heat_membership_json = '''
 {
-    "температура": [
-        {"id": "слабо", "points": [[0,0],[0,1],[5,1],[8,0]]},
-        {"id": "умеренно", "points": [[5,0],[8,1],[13,1],[16,0]]},
-        {"id": "интенсивно", "points": [[13,0],[18,1],[23,1],[26,0]]}
+    "С‚РµРјРїРµСЂР°С‚СѓСЂР°": [
+        {"id": "СЃР»Р°Р±Рѕ", "points": [[0,0],[0,1],[5,1],[8,0]]},
+        {"id": "СѓРјРµСЂРµРЅРЅРѕ", "points": [[5,0],[8,1],[13,1],[16,0]]},
+        {"id": "РёРЅС‚РµРЅСЃРёРІРЅРѕ", "points": [[13,0],[18,1],[23,1],[26,0]]}
     ]
 }
 '''
 rules_json = '''
 [
-    ["холодно", "интенсивно"],
-    ["комфортно", "умеренно"],
-    ["жарко", "слабо"]
+    ["С…РѕР»РѕРґРЅРѕ", "РёРЅС‚РµРЅСЃРёРІРЅРѕ"],
+    ["РєРѕРјС„РѕСЂС‚РЅРѕ", "СѓРјРµСЂРµРЅРЅРѕ"],
+    ["Р¶Р°СЂРєРѕ", "СЃР»Р°Р±Рѕ"]
 ]
 '''
 
 current_temp = 20.5
 result = fuzzy_control(temp_membership_json, heat_membership_json, rules_json, current_temp)
-print(f"Оптимальный уровень нагрева: {result}")
-
+print(f"РћРїС‚РёРјР°Р»СЊРЅС‹Р№ СѓСЂРѕРІРµРЅСЊ РЅР°РіСЂРµРІР°: {result}")
