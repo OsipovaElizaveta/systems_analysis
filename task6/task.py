@@ -1,5 +1,6 @@
 import json
 import numpy as np
+import argparse
 
 
 def membership_function(value, points):
@@ -63,33 +64,46 @@ def fuzzy_control(temp_membership_json, heat_membership_json, rules_json, curren
     return numerator / denominator if denominator != 0 else 0
 
 
-# Пример использования
-temp_membership_json = '''
-{
-    "температура": [
-        {"id": "холодно", "points": [[0,1],[18,1],[22,0],[50,0]]},
-        {"id": "комфортно", "points": [[18,0],[22,1],[24,1],[26,0]]},
-        {"id": "жарко", "points": [[0,0],[24,0],[26,1],[50,1]]}
-    ]
-}
-'''
-heat_membership_json = '''
-{
-    "температура": [
-        {"id": "слабо", "points": [[0,0],[0,1],[5,1],[8,0]]},
-        {"id": "умеренно", "points": [[5,0],[8,1],[13,1],[16,0]]},
-        {"id": "интенсивно", "points": [[13,0],[18,1],[23,1],[26,0]]}
-    ]
-}
-'''
-rules_json = '''
-[
-    ["холодно", "интенсивно"],
-    ["комфортно", "умеренно"],
-    ["жарко", "слабо"]
-]
-'''
+def main():
+    """Основная функция для работы через командную строку."""
+    parser = argparse.ArgumentParser(description="Нечеткое управление нагревом.")
+    parser.add_argument(
+        "temp_membership_file",
+        type=str,
+        help="Путь к JSON файлу с функциями принадлежности температуры."
+    )
+    parser.add_argument(
+        "heat_membership_file",
+        type=str,
+        help="Путь к JSON файлу с функциями принадлежности нагрева."
+    )
+    parser.add_argument(
+        "rules_file",
+        type=str,
+        help="Путь к JSON файлу с правилами управления."
+    )
+    parser.add_argument(
+        "current_temp",
+        type=float,
+        help="Текущее значение температуры, для которого нужно применить нечеткий контроль."
+    )
 
-current_temp = 20.5
-result = fuzzy_control(temp_membership_json, heat_membership_json, rules_json, current_temp)
-print(f"Оптимальный уровень нагрева: {result}")
+    args = parser.parse_args()
+
+    # Считывание JSON из файлов
+    with open(args.temp_membership_file, "r") as file:
+        temp_membership_json = file.read()
+
+    with open(args.heat_membership_file, "r") as file:
+        heat_membership_json = file.read()
+
+    with open(args.rules_file, "r") as file:
+        rules_json = file.read()
+
+    # Выполнение алгоритма нечеткого управления
+    result = fuzzy_control(temp_membership_json, heat_membership_json, rules_json, args.current_temp)
+    print(f"Оптимальный уровень нагрева: {result}")
+
+
+if __name__ == "__main__":
+    main()
