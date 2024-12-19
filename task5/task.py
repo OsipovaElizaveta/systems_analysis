@@ -1,31 +1,91 @@
 import json
+import numpy as np
+import argparse
 
-def find_disagreement_core(ranking1_json, ranking2_json):
-    # Преобразуем JSON-строки в списки
-    ranking1 = json.loads(ranking1_json)
-    ranking2 = json.loads(ranking2_json)
+# ▎Находит ядро противоречий
+def find_S(A, B):
+    # Вычисление матриц отношений для A и B
+    Y_a = find_Y(A)
+    Y_b = find_Y(B)
 
-    # Преобразуем вложенные списки в одномерные списки для облегчения сравнения
-    flat_ranking1 = [item if isinstance(item, list) else [item] for item in ranking1]
-    flat_ranking2 = [item if isinstance(item, list) else [item] for item in ranking2]
+    # Транспонирование матриц отношений
+    Y_ta = np.transpose(Y_a)
+    Y_tb = np.transpose(Y_b)
 
-    # найдем элементы которые находятся в пересечении двух ранжировок
-    disagreements = []
+    # Элементное умножение матриц A и B
+    Y_AB = np.multiply(Y_a, Y_b)
+    Y_tAB = np.multiply(Y_ta, Y_tb)
 
-    # Найдем наибольший подмассив без пересечений
-    for group1 in flat_ranking1:
-        for group2 in flat_ranking2:
-            intersection = set(group1) & set(group2)
-            if intersection:
-                disagreements.append(list(intersection))
+    # Поиск ядер противоречий
+    n = len(Y_a)
+    S = [
+        (i + 1, j + 1) 
+        for i in range(n) 
+        for j in range(n) 
+        if i < j and Y_AB[i, j] == 0 and Y_tAB[i, j] == 0
+    ]
 
-    # Преобразуем результат в JSON-строку и возвращаем
-    return json.dumps(disagreements)
+    return S
 
-# Пример использования
-ranking1_json = '[1, [2, 3], 4, [5, 6, 7], 8, 9, 10]'
-ranking2_json = '[[1, 2], [3, 4, 5], 6, 7, 9, [8, 10]]'
+# ▎Находит матрицу отношений
+def find_Y(ranking):
+    levels = {}
+    
+    # Создание словаря уровня из ранжирования
+    for i, x in enumerate(ranking):
+        if isinstance(x, list):
+            for item in x:
+                levels[item] = i
+        else:
+            levels[x] = i
+    
+    n = len(levels)
+    matrix = np.zeros((n, n), dtype=int)
 
-disagreement_core_json = find_disagreement_core(ranking1_json, ranking2_json)
-print(disagreement_core_json)  # Ожидаемый вывод: [["8", "9"]]
+    # Формирование матрицы отношений
+    for i in range(1, n + 1):
+        for j in range(1, n + 1):
+            if levels[j] >= levels[i]:
+                matrix[i - 1, j - 1] = 1
 
+    return matrix
+
+# ▎Основная функция
+def main(str_A, str_B):
+    # Парсинг строк JSON в объекты Python
+    A = json.loads(str_A)
+    B = json.loads(str_B)
+
+    # Вычисление ядра противоречий
+    S = find_S(A, B)
+    
+    return json.dumps(S)
+
+if __name__ == "__main__":
+    # Создаем парсер аргументов командной строки
+    parser = argparse.ArgumentParser(description="Обработка двух JSON-файлов.")
+    
+    parser.add_argument(
+        "file_A",
+        nargs="?",
+        default="task5/A.json",
+        help="Путь к первому JSON-файлу (по умолчанию task5/A.json)",
+    )
+    parser.add_argument(
+        "file_B",
+        nargs="?",
+        default="task5/B.json",
+        help="Путь ко второму JSON-файлу (по умолчанию task5/B.json)",
+    )
+
+    # Считывание и парсинг файлов JSON
+    args = parser.parse_args()
+    
+    with open(args.file_A, "r") as file:
+        str_A = file.read()
+    
+    with open(args.file_B, "r") as file:
+        str_B = file.read()
+
+    # Вывод результата
+    print(main(str_A, str_B))
